@@ -27,8 +27,10 @@ def extractWordFeatures(x: str) -> FeatureVector:
     Example: "I am what I am" --> {'I': 2, 'am': 2, 'what': 1}
     """
     # BEGIN_YOUR_CODE (our solution is 4 lines of code, but don't worry if you deviate from this)
+    #得到句子中的单词
     m = x.split(" ")
     dic = {}
+    #对出现过的单词进行计数
     for i in m:
         if i in dic.keys():
             dic[i] = dic[i]+1
@@ -76,17 +78,21 @@ def learnPredictor(trainExamples: List[Tuple[T, int]],
             else:
                 weights[k2] = 0
     for i in range(numEpochs):
+    #每个epochs都会对单独的例子进行梯度下降
         for j in range(len(trainExamples)):
             y = (1 if dotProduct(featureExtractor(trainExamples[j][0]), weights)>=0 else -1)
             if y == trainExamples[j][1]:
                 continue
             # sdF = -1*feature[j]*trainExamples[j][1]
             # return sum(d1.get(f, 0) * v for f, v in list(d2.items()))
+            #进行梯度下降
             for k in feature[j].keys():
                 weights[k] = weights[k] - eta * (-feature[j][k]*trainExamples[j][1])
+        #计算在训练集上的误差
         trainError = evaluatePredictor(
             trainExamples, lambda x:
             (1 if dotProduct(featureExtractor(x), weights) >= 0 else -1))
+        # 计算在测试集上的误差
         validationError = evaluatePredictor(
             validationExamples, lambda x:
             (1 if dotProduct(featureExtractor(x), weights) >= 0 else -1))
@@ -117,9 +123,11 @@ def generateDataset(numExamples: int, weights: WeightVector) -> List[Example]:
         # BEGIN_YOUR_CODE (our solution is 3 lines of code, but don't worry if you deviate from this)
         phi = {}
         for i in weights.keys():
+            #随机选取可能的key值，有50%的概率key被选中
             if random.random()>0.5:
                 continue
             else:
+            #对应单词的次数随机在0-1000之间
                 phi[i] = random.randint(0,1000)
         y = (1 if dotProduct(phi, weights) >= 0 else -1)
         # END_YOUR_CODE
@@ -137,13 +145,17 @@ def extractCharacterFeatures(n: int) -> Callable[[str], FeatureVector]:
     Return a function that takes a string |x| and returns a sparse feature
     vector consisting of all n-grams of |x| without spaces mapped to their n-gram counts.
     EXAMPLE: (n = 3) "I like tacos" --> {'Ili': 1, 'lik': 1, 'ike': 1, ...
+    Iliketacos
     You may assume that n >= 1.
     '''
     def extract(x: str) -> Dict[str, int]:
         # BEGIN_YOUR_CODE (our solution is 6 lines of code, but don't worry if you deviate from this)
+        #去除句子中的空格
         x = x.replace(" ", "")
+        #对该字符串以n位长度进行分词
         m = [x[i:i+n] for i in range(len(x)-n+1)]
         dic = {}
+        #统计不同词出现的次数，做为特征向量
         for i in m:
             if i in dic.keys():
                 dic[i] = dic[i] + 1
@@ -204,6 +216,8 @@ def kmeans(examples: List[Dict[str, float]], K: int,
             final reconstruction loss)
     '''
     # BEGIN_YOUR_CODE (our solution is 28 lines of code, but don't worry if you deviate from this)
+
+    #初始化k个中心点
     centers = [{}]*K
     counts = [0]*len(examples)
     for i in examples:
@@ -217,12 +231,16 @@ def kmeans(examples: List[Dict[str, float]], K: int,
     assignments = [-1]*len(examples)
     beforeAssignment = []
     err = 0.0
+
+    #k-means最多迭代maxEpochs次
     for i in range(maxEpochs):
+        #计算每个点到k个中心点的距离
         for j in range(len(examples)):
             for k in range(K):
                 if k == 0:
                     small = sum((centers[k].get(f, 0)-v)**2 for f, v in list(examples[j].items()))
                 m = sum((centers[k].get(f, 0) - v) ** 2 for f, v in list(examples[j].items()))
+                #存储该点离哪一个中心点最近，该点就属于该中心点
                 if small >= m:
                     small = m
                     assignments[j] = k
@@ -230,6 +248,8 @@ def kmeans(examples: List[Dict[str, float]], K: int,
             centers[k] = {k:0 for k in centers[k].keys()}
         err = 0.0
         counts = [0] * len(examples)
+
+        #在确定不同的点属于哪一中心点后，重新计算中心点位置
         for j in range(len(assignments)):
             for k in examples[j].keys():
                 centers[assignments[j]][k] = centers[assignments[j]][k]+examples[j][k]
@@ -241,7 +261,7 @@ def kmeans(examples: List[Dict[str, float]], K: int,
         for j in range(len(assignments)):
             err = err+sum((centers[assignments[j]].get(f, 0) - v) ** 2 for f, v in list(examples[j].items()))
         print(err)
-
+        #判断点的从属情况有没有发生改变，如果没有发生改变，说明k-means收敛，可以提前结束迭代
         if beforeAssignment == assignments:
             break
         beforeAssignment = copy.deepcopy(assignments)
